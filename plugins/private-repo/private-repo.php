@@ -13,17 +13,58 @@
  * Text Domain: private-repo
  */
 
+// GitHub API https://api.github.com/repos/tporret/wp-dev/contents/plugins
+function private_repo_plugins_table_api() {
+    $plugin_list = wp_remote_get( 'https://api.github.com/repos/tporret/wp-dev/contents/plugins' );
+    return $plugin_list;
+}
+
 function private_repo_plugin_tabs($tabs) {
     $tabs['private_repo'] = __('Private Repo', 'private-repo');
     return $tabs;
 }
 add_filter('install_plugins_tabs', 'private_repo_plugin_tabs');
 
-// GitHub API https://api.github.com/tporret/wp-dev
-function private_repo_install_plugins_table_api_args() {
-    $plugin_list = wp_remote_get( 'https://api.github.com/repos/tporret/wp-dev/contents/plugins' );
+// Populate the custom tab with your own plugin list
+function private_repo_tab_content() {
+
+    $plugin_list = private_repo_plugins_table_api();
+    $plugin_list = json_decode( $plugin_list['body'] );
+    $plugin_list = array_reverse( $plugin_list );
+
+    // Display the plugin list
+    ?>
+    <div class="plugin-install-popular wp-clearfix">
+        <div class="plugin-install-popular-list">
+            <?php foreach ( $plugin_list as $plugin ) : ?>
+                <div class="plugin-card">
+                    <div class="plugin-card-top">
+                        <div class="name column-name">
+                            <h3>
+                                <a href="<?php echo esc_url( $plugin->_links->self  ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $plugin->name  ); ?></a>
+                            </h3>
+                        </div>
+                        <div class="action-links">
+                            <ul class="plugin-action-buttons">
+                                <li>
+                                    <a href="<?php echo esc_url( $plugin->_links->self  ); ?>" class="install-now button" data-slug="<?php echo esc_attr( $plugin->name  ); ?>" data-name="<?php echo esc_attr( $plugin->name  ); ?>" aria-label="<?php echo esc_attr( $plugin->name  ); ?> <?php esc_attr_e( 'Install Now' ); ?>" data-icon="">
+                                        <?php esc_html_e( 'Install Now' ); ?>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="desc column-description">
+                            <p><?php echo esc_html( $plugin->name  ); ?></p>
+                            <p class="authors"><?php printf( __( 'By %s' ), esc_html( $plugin->name  ) ); ?></p>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php
 }
-private_repo_install_plugins_table_api_args();
+add_action('install_plugins_private_repo', 'private_repo_tab_content');
 
 // Enqueue js/partytowm/lib/partytown.js
 function private_repo_enqueue_scripts() {
